@@ -1,7 +1,7 @@
+import { router } from "@inertiajs/react";
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Link, router } from "@inertiajs/react";
 import AppLayout from "@/layouts/app-layout";
 
 interface Message {
@@ -26,7 +26,7 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [conversationId, setConversationId] = useState<string | null>(initialConversationId);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -57,7 +57,9 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
     };
 
     const sendMessage = async (): Promise<void> => {
-        if (!message.trim()) return;
+        if (!message.trim()) {
+            return;
+        }
 
         const userMsg: Message = { role: 'user', content: message };
         setMessages(prev => [...prev, userMsg]);
@@ -71,7 +73,7 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ""
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     message: userMsg.content,
                     conversation_id: conversationId
                 })
@@ -82,19 +84,19 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
             }
 
             const data: { reply: string; conversation_id: string } = await res.json();
-            
+
             const aiMsg: Message = { role: 'assistant', content: data.reply };
             setMessages(prev => [...prev, aiMsg]);
-            
+
             if (!conversationId) {
                 setConversationId(data.conversation_id);
                 // Refresh conversation list after new chat starts
                 router.reload({ only: ['conversations'] });
             }
-        } catch (error) {
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: "Sorry, something went wrong. Please check your connection or try again later." 
+        } catch (_error) {
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: "Sorry, something went wrong. Please check your connection or try again later."
             }]);
         } finally {
             setIsLoading(false);
@@ -182,16 +184,17 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
                                                     components={{
-                                                        p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
-                                                        code: ({ node, ...props }: any) => {
+                                                        p: ({ node: _node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                                                        code: ({ node: _node, ...props }: any) => {
                                                             const { inline, ...rest } = props;
+
                                                             return inline
                                                                 ? <code className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded font-mono text-xs" {...rest} />
                                                                 : <div className="bg-neutral-900 text-neutral-100 p-5 rounded-2xl my-5 overflow-x-auto border border-neutral-800 shadow-inner"><code className="font-mono text-xs leading-relaxed" {...rest} /></div>;
                                                         },
-                                                        table: ({ node, ...props }) => <div className="overflow-x-auto my-5 rounded-xl border border-neutral-200 dark:border-neutral-700"><table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700" {...props} /></div>,
-                                                        th: ({ node, ...props }) => <th className="bg-neutral-50 dark:bg-neutral-800 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-neutral-500" {...props} />,
-                                                        td: ({ node, ...props }) => <td className="px-4 py-3 text-sm border-t border-neutral-100 dark:border-neutral-800" {...props} />,
+                                                        table: ({ node: _node, ...props }) => <div className="overflow-x-auto my-5 rounded-xl border border-neutral-200 dark:border-neutral-700"><table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700" {...props} /></div>,
+                                                        th: ({ node: _node, ...props }) => <th className="bg-neutral-50 dark:bg-neutral-800 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-neutral-500" {...props} />,
+                                                        td: ({ node: _node, ...props }) => <td className="px-4 py-3 text-sm border-t border-neutral-100 dark:border-neutral-800" {...props} />,
                                                     }}
                                                 >
                                                     {msg.content}
