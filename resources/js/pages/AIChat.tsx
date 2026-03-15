@@ -26,6 +26,7 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [conversationId, setConversationId] = useState<string | null>(initialConversationId);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,11 +42,14 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
     useEffect(() => {
         setMessages(initialMessages);
         setConversationId(initialConversationId);
+        // Close sidebar on mobile after selecting a conversation
+        setIsSidebarOpen(false);
     }, [initialMessages, initialConversationId]);
 
     const startNewChat = () => {
         setMessages([]);
         setConversationId(null);
+        setIsSidebarOpen(false);
         router.visit('/ai-chat?new=true');
     };
 
@@ -105,11 +109,47 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
 
     return (
         <AppLayout breadcrumbs={[{ title: 'AI Chat', href: '/ai-chat' }]}>
-            <div className="flex h-[calc(100vh-8rem)] gap-4 p-4">
+            <div className="flex h-[calc(100vh-8rem)] lg:gap-4 lg:p-4 relative overflow-hidden">
+                
+                {/* Mobile Toggle & Header (Visible only on small screens) */}
+                <div className="lg:hidden absolute top-0 left-0 right-0 h-14 bg-white dark:bg-neutral-900 border-b border-sidebar-border/70 flex items-center justify-between px-4 z-10">
+                    <button 
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="p-2 -ml-2 text-neutral-500 hover:text-blue-600 focus:outline-none"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <span className="font-bold text-neutral-700 dark:text-neutral-200">AI Chat</span>
+                    <button 
+                        onClick={startNewChat}
+                        className="p-2 -mr-2 text-blue-600 hover:text-blue-700 focus:outline-none"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Sidebar Backdrop (Mobile only) */}
+                {isSidebarOpen && (
+                    <div 
+                        className="lg:hidden fixed inset-0 bg-black/50 z-20 transition-opacity"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+
                 {/* Conversations Sidebar */}
-                <div className="w-80 flex flex-col bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-sidebar-border/70 overflow-hidden shrink-0">
+                <div className={`
+                    fixed lg:relative inset-y-0 left-0 z-30 w-72 lg:w-80 flex flex-col 
+                    bg-white dark:bg-neutral-900 lg:rounded-2xl shadow-xl lg:shadow-sm 
+                    border-r lg:border border-sidebar-border/70 overflow-hidden shrink-0
+                    transition-transform duration-300 ease-in-out
+                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                `}>
                     <div className="p-4 border-b border-sidebar-border/70 flex justify-between items-center bg-gray-50/50 dark:bg-neutral-800/50">
-                        <h2 className="font-bold text-neutral-700 dark:text-neutral-200">History</h2>
+                        <h2 className="font-bold text-neutral-700 dark:text-neutral-200 uppercase text-xs tracking-wider">Chat History</h2>
                         <button
                             onClick={startNewChat}
                             className="cursor-pointer p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
@@ -129,8 +169,8 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                                     key={c.id}
                                     onClick={() => loadConversation(c.id)}
                                     className={`w-full text-left p-3 rounded-xl transition-all ${conversationId === c.id
-                                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
-                                        : 'hover:bg-gray-50 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800 shadow-sm'
+                                        : 'hover:bg-gray-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                                         }`}
                                 >
                                     <div className="font-medium text-sm truncate">{c.title}</div>
@@ -142,27 +182,27 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                 </div>
 
                 {/* Main Chat Area */}
-                <div className="flex-1 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-sidebar-border/70 flex flex-col overflow-hidden">
+                <div className="flex-1 bg-white dark:bg-neutral-900 lg:rounded-2xl shadow-sm lg:border lg:border-sidebar-border/70 flex flex-col overflow-hidden w-full lg:w-auto mt-14 lg:mt-0">
                     {/* Chat Body */}
-                    <div className="flex-1 p-6 overflow-y-auto scroll-smooth no-scrollbar">
+                    <div className="flex-1 p-4 lg:p-6 overflow-y-auto scroll-smooth no-scrollbar">
                         {messages.length === 0 && !isLoading ? (
-                            <div className="flex flex-col items-center justify-center h-full text-neutral-400 space-y-4">
+                            <div className="flex flex-col items-center justify-center h-full text-neutral-400 space-y-4 px-4">
                                 <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-full text-blue-600">
-                                    <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-12 h-12 lg:w-16 lg:h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                                     </svg>
                                 </div>
                                 <div className="text-center">
-                                    <h3 className="text-xl font-bold text-neutral-700 dark:text-neutral-200">Start a new conversation</h3>
-                                    <p className="text-sm mt-2 max-w-xs">Ask me anything and I'll keep track of our conversation history.</p>
+                                    <h3 className="text-lg lg:text-xl font-bold text-neutral-700 dark:text-neutral-200">Start a new conversation</h3>
+                                    <p className="text-xs lg:text-sm mt-2 max-w-xs mx-auto">Ask me anything and I'll keep track of our conversation history.</p>
                                 </div>
                             </div>
                         ) : (
-                            <div className="max-w-4xl mx-auto w-full space-y-8 pb-4">
+                            <div className="max-w-4xl mx-auto w-full space-y-6 lg:space-y-8 pb-4">
                                 {messages.map((msg, index) => (
                                     <div key={index} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                                         <div className={`flex items-center space-x-2 mb-2 ${msg.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-sm ${msg.role === 'user' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600' : 'bg-blue-600 text-white'
+                                            <div className={`w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-sm ${msg.role === 'user' ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600' : 'bg-blue-600 text-white'
                                                 }`}>
                                                 {msg.role === 'user' ? (
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -174,9 +214,9 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                                                 {msg.role === 'user' ? 'You' : 'Assistant'}
                                             </span>
                                         </div>
-                                        <div className={`max-w-[85%] p-5 rounded-3xl shadow-sm text-sm leading-relaxed ${msg.role === 'user'
+                                        <div className={`max-w-[95%] lg:max-w-[85%] p-4 lg:p-5 rounded-2xl lg:rounded-3xl shadow-sm text-[13px] lg:text-sm leading-relaxed ${msg.role === 'user'
                                             ? 'bg-blue-600 text-white rounded-tr-none'
-                                            : 'bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-100 dark:border-neutral-700 rounded-tl-none prose prose-blue dark:prose-invert prose-sm'
+                                            : 'bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-100 dark:border-neutral-700 rounded-tl-none prose prose-blue dark:prose-invert prose-sm break-words'
                                             }`}>
                                             {msg.role === 'user' ? (
                                                 msg.content
@@ -187,14 +227,13 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                                                         p: ({ node: _node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
                                                         code: ({ node: _node, ...props }: any) => {
                                                             const { inline, ...rest } = props;
-
                                                             return inline
                                                                 ? <code className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded font-mono text-xs" {...rest} />
-                                                                : <div className="bg-neutral-900 text-neutral-100 p-5 rounded-2xl my-5 overflow-x-auto border border-neutral-800 shadow-inner"><code className="font-mono text-xs leading-relaxed" {...rest} /></div>;
+                                                                : <div className="bg-neutral-900 text-neutral-100 p-4 lg:p-5 rounded-xl lg:rounded-2xl my-5 overflow-x-auto border border-neutral-800 shadow-inner"><code className="font-mono text-xs leading-relaxed" {...rest} /></div>;
                                                         },
                                                         table: ({ node: _node, ...props }) => <div className="overflow-x-auto my-5 rounded-xl border border-neutral-200 dark:border-neutral-700"><table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700" {...props} /></div>,
-                                                        th: ({ node: _node, ...props }) => <th className="bg-neutral-50 dark:bg-neutral-800 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-neutral-500" {...props} />,
-                                                        td: ({ node: _node, ...props }) => <td className="px-4 py-3 text-sm border-t border-neutral-100 dark:border-neutral-800" {...props} />,
+                                                        th: ({ node: _node, ...props }) => <th className="bg-neutral-50 dark:bg-neutral-800 px-4 py-3 text-left text-[10px] lg:text-xs font-bold uppercase tracking-wider text-neutral-500" {...props} />,
+                                                        td: ({ node: _node, ...props }) => <td className="px-4 py-3 text-xs lg:text-sm border-t border-neutral-100 dark:border-neutral-800" {...props} />,
                                                     }}
                                                 >
                                                     {msg.content}
@@ -206,14 +245,14 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
 
                                 {isLoading && (
                                     <div className="flex items-start space-x-2">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
+                                        <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
                                             <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                                         </div>
-                                        <div className="bg-neutral-50 dark:bg-neutral-800 p-5 rounded-3xl rounded-tl-none border border-neutral-100 dark:border-neutral-700 flex space-x-2 items-center">
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                                            <span className="text-xs font-medium text-neutral-400 ml-2 italic">Generating answer...</span>
+                                        <div className="bg-neutral-50 dark:bg-neutral-800 p-4 lg:p-5 rounded-2xl lg:rounded-3xl rounded-tl-none border border-neutral-100 dark:border-neutral-700 flex space-x-2 items-center">
+                                            <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                            <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                                            <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                                            <span className="text-[10px] lg:text-xs font-medium text-neutral-400 ml-2 italic">Generating answer...</span>
                                         </div>
                                     </div>
                                 )}
@@ -223,12 +262,12 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                     </div>
 
                     {/* Footer Input */}
-                    <div className="p-6 bg-gray-50/50 dark:bg-neutral-800/50 border-t border-sidebar-border/70 shrink-0">
-                        <div className="max-w-4xl mx-auto flex gap-3">
+                    <div className="p-4 lg:p-6 bg-gray-50/50 dark:bg-neutral-800/50 border-t border-sidebar-border/70 shrink-0">
+                        <div className="max-w-4xl mx-auto flex gap-2 lg:gap-3">
                             <input
                                 type="text"
                                 placeholder="Message AI Assistant..."
-                                className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-neutral-700 dark:text-neutral-200 shadow-sm"
+                                className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl lg:rounded-2xl px-4 lg:px-5 py-3 lg:py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm lg:text-base text-neutral-700 dark:text-neutral-200 shadow-sm"
                                 value={message}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessage(e.target.value)}
                                 onKeyPress={(e: React.KeyboardEvent) => e.key === 'Enter' && sendMessage()}
@@ -238,13 +277,13 @@ export default function AIChat({ initialMessages = [], initialConversationId = n
                             <button
                                 onClick={sendMessage}
                                 disabled={isLoading || !message.trim()}
-                                className={`px-8 py-4 rounded-2xl font-bold transition-all shadow-md active:transform active:scale-95 disabled:opacity-50 flex items-center justify-center ${isLoading ? 'bg-blue-300 text-white cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50'
+                                className={`px-4 lg:px-8 py-3 lg:py-4 rounded-xl lg:rounded-2xl font-bold transition-all shadow-md active:transform active:scale-95 disabled:opacity-50 flex items-center justify-center shrink-0 ${isLoading ? 'bg-blue-300 text-white cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50'
                                     }`}
                             >
                                 {isLoading ? (
                                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                 ) : (
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                                    <svg className="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                                 )}
                             </button>
                         </div>
